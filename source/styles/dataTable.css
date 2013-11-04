@@ -1,0 +1,85 @@
+table.dataTable thead th {
+    text-transform: uppercase;
+}
+
+table.dataTable td {
+    vertical-align: middle;
+}
+
+.dataTables_paginate {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.paginate_disabled_previous:active,
+.paginate_enabled_previous:active,
+.paginate_disabled_next:active,
+.paginate_enabled_next:active {
+    outline: none;
+}
+
+.paginate_disabled_previous,
+.paginate_disabled_next {
+    display: none !important;
+}
+
+.paginate_disabled_previous,
+.paginate_enabled_previous {
+    margin-left: 23px;
+}
+
+.paginate_disabled_next,
+.paginate_enabled_next {
+    padding-right: 23px;
+    margin-left: 10px;
+}
+
+/*own css classes*/
+#customHeader {
+    position: relative;
+    top: 28px;
+    margin-left: -5px;
+    margin-bottom: 30px;
+    z-index: 500;
+}
+
+.header-selector{
+    display: inline;
+    margin: 10px;
+}
+
+select.header-selector {
+    width:auto;
+}
+
+.header-button{
+    display: inline;
+    margin: 10px;
+}
+
+.header-textbox{
+    display: inline;
+    margin: 10px;
+}
+
+.header-label{
+    display: inline;
+    margin: 10px -5px 10px 10px;
+}
+
+.control-group{
+    margin-left: 50px;
+    margin-right: 50px;
+    display: inline;
+}
+
+.header-controls{
+    display: inline;
+}
+
+.dataTables_empty{
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center !important;
+}
+
