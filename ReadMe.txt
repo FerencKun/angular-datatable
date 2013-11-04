@@ -4,7 +4,7 @@ I hope together we can improve it even further!
 This implementation is based on the plug-in called DataTables. http://www.datatables.net/
 The data table is wrapped inside an angular directive, styled with Twitter Bootstrap, it uses a lot of jQuery and have a whole new API to customise the table.
 
-For more information about this plugin, please refer to my blog: myjitjs.wordpress.com
+For more information about this plugin, please refer to my blog: http://myjitjs.wordpress.com
 
 I created a sample app to show how to use the table and most of its features. API documentation will be published soon.
 The sample app is an angular.js app. You can start using it by running the "grunt server" command.
