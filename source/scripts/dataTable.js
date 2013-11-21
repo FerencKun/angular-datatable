@@ -324,22 +324,29 @@ angular.module('angularTableApp')
 
                 //<editor-fold desc="region: draw and redraw table">
 
+                //support case-insensitivity
+                var sortables = [];
+                for(var prop in scope[attrs.sortingProperties]){
+                    sortables.push(prop.toLowerCase())
+                }
+                var toHide = [];
+                for(var prop in scope[attrs.hidingProperties]){
+                    toHide.push(prop.toLowerCase())
+                }
+
                 //create header of the table - set sorting and hide if needed
                 var prepareHeader = function (header) {
 
                     headers = [];
 
-                    var sortables = scope[attrs.sortingProperties];
-                    var toHide = scope[attrs.hidingProperties];
-
                     //get the property names for header titles
                     for (var item in header) {
 
-                        if (!toHide || toHide.indexOf(item) == -1) {
+                        if (!toHide || toHide.indexOf(item.toLowerCase()) == -1) {
 
                             var sortable = attrs.allSortable == "" ? true : false;
 
-                            if (sortables && sortables.indexOf(item) != -1) {
+                            if (sortables && sortables.indexOf(item.toLowerCase()) != -1) {
                                 sortable = true;
                             }
 
@@ -352,7 +359,6 @@ angular.module('angularTableApp')
                 var prepareRows = function (source) {
 
                     var rows = [];
-                    var toHide = scope[attrs.hidingProperties];
 
                     for (var i = 0; i < source.length; i++) {
 
@@ -360,7 +366,7 @@ angular.module('angularTableApp')
 
                         for (var item in source[i]) {
 
-                            if (!toHide || toHide.indexOf(item) == -1) {
+                            if (!toHide || toHide.indexOf(item.toLowerCase()) == -1) {
                                 row.push(source[i][item]);
                             }
                         }
