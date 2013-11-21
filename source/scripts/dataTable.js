@@ -326,11 +326,11 @@ angular.module('angularTableApp')
 
                 //support case-insensitivity
                 var sortables = [];
-                for(var prop in scope[attrs.sortingProperties]){
+                for (var prop in scope[attrs.sortingProperties]) {
                     sortables.push(prop.toLowerCase())
                 }
                 var toHide = [];
-                for(var prop in scope[attrs.hidingProperties]){
+                for (var prop in scope[attrs.hidingProperties]) {
                     toHide.push(prop.toLowerCase())
                 }
 
@@ -426,12 +426,12 @@ angular.module('angularTableApp')
                 var onInfoChanged = function (oSettings, iStart, iEnd, iMax, iTotal, sPre) {
 
                     //reading out the ordering info from oSettings
-                    console.log(oSettings.aaSorting);
-                    var headerIndex = oSettings.aaSorting[0][0];
-                    var direction = oSettings.aaSorting[0][1];
-                    var header = headers[headerIndex];
-                    var newOrder = { property: header.sTitle, direction: direction};
-
+                    if (oSettings) {
+                        var headerIndex = oSettings.aaSorting[0][0];
+                        var direction = oSettings.aaSorting[0][1];
+                        var header = headers[headerIndex];
+                        var newOrder = { property: header.sTitle, direction: direction};
+                    }
 
                     //need to check because at the first creation time it will be called to and at this time we are already in digest phase
                     if (!scope.$$phase) {
@@ -448,26 +448,29 @@ angular.module('angularTableApp')
                 scope.$watch(attrs.mySource, function (source) {
 
                     //the first time set of the collection is a watch triggering action too
-                    if (isInitTime) {
+                    if (isInitTime && source && source.length > 0) {
 
+                        //initialize the table
+                        drawTable(scope[attrs.mySource]);
                         isInitTime = false;
                         return;
-                    }
+                    } else if (!isInitTime) {
 
-                    if (source && source.length > 0) {
+                        if (source && source.length > 0) {
 
-                        //page size needs to be set explicitly on the table options too
-                        var oSettings = table.fnSettings();
-                        oSettings._iDisplayLength = pageSize;
+                            //page size needs to be set explicitly on the table options too
+                            var oSettings = table.fnSettings();
+                            oSettings._iDisplayLength = pageSize;
 
-                        //redraw after resize
-                        table.fnDraw();
+                            //redraw after resize
+                            table.fnDraw();
 
-                        refreshData(source);
-                    } else {
-                        //if empty source comes back
-                        elementsMaxReached = true;
-                        table.fnClearTable();
+                            refreshData(source);
+                        } else {
+                            //if empty source comes back
+                            elementsMaxReached = true;
+                            table.fnClearTable();
+                        }
                     }
                 });
                 //</editor-fold>
