@@ -326,12 +326,14 @@ angular.module('angularTableApp')
 
                 //support case-insensitivity
                 var sortables = [];
-                for (var prop in scope[attrs.sortingProperties]) {
-                    sortables.push(prop.toLowerCase())
+                var sortingProperties = scope[attrs.sortingProperties];
+                for (var i = 0; i < sortingProperties.length; i++) {
+                    sortables.push(sortingProperties[i].toLowerCase())
                 }
                 var toHide = [];
-                for (var prop in scope[attrs.hidingProperties]) {
-                    toHide.push(prop.toLowerCase())
+                var hidingProperties = scope[attrs.hidingProperties];
+                for (var i = 0; i < hidingProperties.length; i++) {
+                    toHide.push(hidingProperties[i].toLowerCase())
                 }
 
                 //create header of the table - set sorting and hide if needed
@@ -353,7 +355,7 @@ angular.module('angularTableApp')
                             headers.push({ "sTitle": item, "bSortable": sortable });
                         }
                     }
-                }
+                };
 
                 //create rows of the table - hide if needed
                 var prepareRows = function (source) {
@@ -375,7 +377,7 @@ angular.module('angularTableApp')
                     }
 
                     return rows;
-                }
+                };
 
                 //function to draw the table
                 var drawTable = function (source) {
@@ -474,9 +476,6 @@ angular.module('angularTableApp')
                     }
                 });
                 //</editor-fold>
-
-                //initialize the table
-                drawTable(scope[attrs.mySource]);
             }
         };
     });
