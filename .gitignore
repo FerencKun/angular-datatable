@@ -1,0 +1,7 @@
+.git
+.DS_Store
+node_modules
+.metadata
+.tmp
+.idea
+.idea/workspace.xml
