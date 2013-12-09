@@ -2,6 +2,7 @@ angular.module('angularTableApp')
     .directive('myDataTable', function ($parse) {
         'use strict';
 
+
         return {
             template: '<table class="display table table-striped table-hover" id="my-data-table"><div id="customHeader"></div></table>',
 
@@ -341,6 +342,9 @@ angular.module('angularTableApp')
 
                     headers = [];
 
+                    var sortables = scope[attrs.sortingProperties];
+                    var toHide = scope[attrs.hidingProperties];
+
                     //get the property names for header titles
                     for (var item in header) {
 
@@ -355,7 +359,7 @@ angular.module('angularTableApp')
                             headers.push({ "sTitle": item, "bSortable": sortable });
                         }
                     }
-                };
+                }
 
                 //create rows of the table - hide if needed
                 var prepareRows = function (source) {
@@ -366,10 +370,21 @@ angular.module('angularTableApp')
 
                         var row = [];
 
-                        for (var item in source[i]) {
+                        //use header to iterate through the elements to keep the property order
+                        //'hide items' happens in prepareHeaders
+                        for (var j = 0; j < headers.length; j++) {
+                            var item = headers[j].sTitle;
 
-                            if (!toHide || toHide.indexOf(item.toLowerCase()) == -1) {
-                                row.push(source[i][item]);
+                            var valueToAdd = source[i][item];
+                            //use converters
+                            var converters = scope[attrs.converters];
+                            if (converters) {
+                                var converterString = converters.getConverterStringTo(item);
+                                if (converterString) {
+                                    var converter = $parse(converterString);
+                                    valueToAdd = converter({value: valueToAdd}, scope, { $event: event });
+                                }
+                                row.push(valueToAdd);
                             }
                         }
 
@@ -377,7 +392,7 @@ angular.module('angularTableApp')
                     }
 
                     return rows;
-                };
+                }
 
                 //function to draw the table
                 var drawTable = function (source) {
@@ -485,6 +500,19 @@ Array.prototype.getElementByFilterName = function (obj) {
     for (var i = 0; i < this.length; i++) {
         if (this[i].filterName === obj.filterName) {
             return this[i];
+        }
+    }
+
+    return;
+}
+
+
+Array.prototype.getConverterStringTo = function (property) {
+
+    for (var i = 0; i < this.length; i++) {
+        if (this[i].property.toLowerCase() === property.toLowerCase()) {
+
+            return this[i].converterCallback;
         }
     }
 

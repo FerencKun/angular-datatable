@@ -188,6 +188,21 @@ angular.module('angularTableApp')
 
             $scope.refresh(lastUsedData ? lastUsedData : tmpData);
         };
+
+        $scope.gradeConverter = function (value) {
+
+            if (value === 'A') {
+                return '5';
+            } else if(value === 'C'){
+                return '3';
+            }else{
+                return '1';
+            }
+        };
+
+        $scope.converters = [
+            { property: 'grade', converterCallback: 'gradeConverter(value)'}
+        ];
         //</editor-fold>
     });
 
