@@ -6,7 +6,9 @@ The data table is wrapped inside an angular directive, styled with Twitter Boots
 
 For more information about this plugin, please refer to my blog: http://myjitjs.wordpress.com
 
-I created a sample app to show how to use the table and most of its features. API documentation will be published soon.
+API documentation is available on https://github.com/FerencKun/angular-datatable/wiki/API-Documentation !
+
+I created a sample app to show how to use the table and most of its features. 
 The sample app is an angular.js app. You can start using it by running the "grunt server" command.
 
 This plugin is released under GPL v2 licensing.
