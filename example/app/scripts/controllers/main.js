@@ -101,7 +101,7 @@ angular.module('angularTableApp')
         $scope.hidingProperties = ["id"];
 
         //data source of the data table's first page
-        /**************************************************************************************/
+        /******************************IMPLICIT PAGINATION*************************************/
         /* Remove slice and add the whole collection as source if you use implicit pagination */
         $scope.dataSource = dataSource.slice(0, 10);
         /**************************************************************************************/
@@ -133,7 +133,7 @@ angular.module('angularTableApp')
             }
 
             //now it use only the paging changes
-            /***************************************************/
+            /***************IMPLICIT PAGINATION*****************/
             /* Comment this row out if you use implicit paging */
             $scope.dataSource = tempDataSource.slice(data.pageIndex * data.pageSize, (data.pageIndex + 1) * data.pageSize);
             /***************************************************/
