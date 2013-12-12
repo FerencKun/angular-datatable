@@ -2,7 +2,6 @@ angular.module('angularTableApp')
     .directive('myDataTable', function ($parse) {
         'use strict';
 
-
         return {
             template: '<table class="display table table-striped table-hover" id="my-data-table"><div id="customHeader"></div></table>',
 
@@ -12,13 +11,17 @@ angular.module('angularTableApp')
                 var originalSource; //store the original data source to get element later by row index
 
                 var actualPageIndex = 0;
-                var pageSize = 10;
+                var pageSize = scope[attrs.defaultPageSize] ? parseInt(scope[attrs.defaultPageSize]): 10;
                 var orderBy;
                 var filterOptions = [];
-                var headers;
+                var headers = [];
+                var headerTitles = [];
                 var elementsMaxReached = false;
                 var lastIndex = -1;
-
+                //first element is true because the datatable initialization calls the decorate function on the first page
+                var pageDecorationStatus = [true];
+                //new option to use custom header titles
+                var haveCustomHeaderTitles = false;
                 var table;
                 var isInitTime = true;
                 //</editor-fold>
@@ -115,8 +118,17 @@ angular.module('angularTableApp')
                     });
                 };
 
+                //calls decoration on new page if the data tables uses the my-two-buttons pagination mode
+                function decorateCallback(startIndex){
+                    var pageIndex = startIndex / pageSize;
+                    if(!pageDecorationStatus[pageIndex]){
+                        decorateDataTableOnChange();
+                        pageDecorationStatus[pageIndex] = true;
+                    }
+                }
+
                 //create and set own pagination
-                createPagination(previousCallback, nextCallback, hasNextPage, hasPreviousPage);
+                createPagination(previousCallback, nextCallback, hasNextPage, hasPreviousPage, decorateCallback);
 
                 //prepare the header controls to add them to the header
                 var headerControls = [];
@@ -340,13 +352,13 @@ angular.module('angularTableApp')
                 //create header of the table - set sorting and hide if needed
                 var prepareHeader = function (header) {
 
-                    headers = [];
-
                     var sortables = scope[attrs.sortingProperties];
                     var toHide = scope[attrs.hidingProperties];
 
                     //get the property names for header titles
-                    for (var item in header) {
+                    for (var head in header) {
+                        var item = haveCustomHeaderTitles ? head.propertyName : head;
+                        var title = haveCustomHeaderTitles ? head.title : head;
 
                         if (!toHide || toHide.indexOf(item.toLowerCase()) == -1) {
 
@@ -356,7 +368,8 @@ angular.module('angularTableApp')
                                 sortable = true;
                             }
 
-                            headers.push({ "sTitle": item, "bSortable": sortable });
+                            headers.push(item);
+                            headerTitles.push({ "sTitle": title, "bSortable": sortable });
                         }
                     }
                 }
@@ -373,7 +386,7 @@ angular.module('angularTableApp')
                         //use header to iterate through the elements to keep the property order
                         //'hide items' happens in prepareHeaders
                         for (var j = 0; j < headers.length; j++) {
-                            var item = headers[j].sTitle;
+                            var item = headers[j];//.sTitle;
 
                             var valueToAdd = source[i][item];
                             //use converters
@@ -399,17 +412,41 @@ angular.module('angularTableApp')
 
                     originalSource = source;
 
-                    //get the property names for header titles
-                    prepareHeader(source[0]);
+                    //get the property names for header titles or the user defined header titles
+                    if(scope[attrs.headerTitles]){
+                        prepareHeader(scope[attrs.headerTitles]);
+                        haveCustomHeaderTitles = true;
+                    }else{
+                        prepareHeader(source[0]);
+                    }
 
                     //get the property values for rows
                     var rows = prepareRows(source);
 
+                    //set pagination
+                    var pagination = 'my_two_buttons';
+
+                    if(attrs.paginationType){
+                        switch(attrs.paginationType){
+                            case 'explicit':
+                                console.log('explicit');
+                                pagination = 'my_custom_buttons';
+                                break;
+                            case 'implicit':
+                                console.log('implicit');
+                                pagination = 'my_two_buttons';
+                                break;
+                        }
+                    }
+
+                    console.log(pagination);
+
                     table = $("#my-data-table").dataTable({
-                        "aoColumns": headers,
+                        "aoColumns": headerTitles,
                         "aaData": rows,
+                        "iDisplayLength" : pageSize,
                         "fnInfoCallback": onInfoChanged,
-                        "sPaginationType": "my_custom_buttons", //my implementation in dataTablesExtensions
+                        "sPaginationType": pagination, //my implementation in dataTablesExtensions
                         "sDom": 't<"bottom"pi>',
                         "bFilter": false, //hides the search field
                         "bLengthChange": false, //hides the page size change option

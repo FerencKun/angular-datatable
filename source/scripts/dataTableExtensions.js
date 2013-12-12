@@ -19,7 +19,7 @@ DataTableExtensions.buttonStyle = {
 }
 
 //function to overwrite the pagination system of dataTables
-function createPagination(previousCallback, nextCallback, hasNextPageCallback, hasPreviousPageCallback) {
+function createPagination(previousCallback, nextCallback, hasNextPageCallback, hasPreviousPageCallback, decorateCallback) {
 
     $.fn.dataTableExt.oPagination.my_custom_buttons = {
 
@@ -62,6 +62,75 @@ function createPagination(previousCallback, nextCallback, hasNextPageCallback, h
 
             $('#nextPager').switchClass(hasNextPageCallback, "paginate_enabled_next", "paginate_disabled_next")
 
+        }
+    };
+
+
+    $.fn.dataTableExt.oPagination.my_two_buttons = {
+        /*
+         * Function: oPagination.two_button.fnInit
+         * Purpose:  Initialise dom elements required for pagination with forward/back buttons only
+         * Returns:  -
+         * Inputs:   object:oSettings - dataTables settings object
+         *           node:nPaging - the DIV which contains this pagination control
+         *           function:fnCallbackDraw - draw function which must be called on update
+         */
+        "fnInit": function ( oSettings, nPaging, fnCallbackDraw )
+        {
+            var oLang = oSettings.oLanguage.oPaginate;
+            var oClasses = oSettings.oClasses;
+            var fnClickHandler = function ( e ) {
+                if ( oSettings.oApi._fnPageChange( oSettings, e.data.action ) )
+                {
+                    fnCallbackDraw( oSettings );
+                }
+            };
+
+            var pager = $('<ul class="pager">').appendTo(nPaging);
+
+            var nPreviousWrapper = $('<li id="previousPager">').appendTo(pager);//.addClass("paginate_enabled_previous");
+            var nNextWrapper = $('<li id="nextPager">').appendTo(pager);//.addClass("paginate_enabled_next");
+
+            var nPrevious = $('<a>').text("Previous").appendTo(nPreviousWrapper);
+            var nNext = $('<a>').text("Next").appendTo(nNextWrapper);
+
+            var els = $('a', nPaging);
+            var nPrevious = els[0],
+                nNext = els[1];
+
+            oSettings.oApi._fnBindAction( nPrevious, {action: "previous"}, fnClickHandler );
+            oSettings.oApi._fnBindAction( nNext,     {action: "next"},     fnClickHandler );
+
+            /* ID the first elements only */
+            if ( !oSettings.aanFeatures.p )
+            {
+                nPaging.id = oSettings.sTableId+'_paginate';
+                nPrevious.id = oSettings.sTableId+'_previous';
+                nNext.id = oSettings.sTableId+'_next';
+
+                nPrevious.setAttribute('aria-controls', oSettings.sTableId);
+                nNext.setAttribute('aria-controls', oSettings.sTableId);
+            }
+        },
+
+        /*
+         * Function: oPagination.two_button.fnUpdate
+         * Purpose:  Update the two button pagination at the end of the draw
+         * Returns:  -
+         * Inputs:   object:oSettings - dataTables settings object
+         *           function:fnCallbackDraw - draw function to call on page change
+         */
+        "fnUpdate": function ( oSettings, fnCallbackDraw )
+        {
+            if (!oSettings.aanFeatures.p) {
+                return;
+            }
+
+            $('#previousPager').switchClass(function (){ return oSettings._iDisplayStart === 0 }, "paginate_disabled_previous", "paginate_enabled_previous");
+
+            $('#nextPager').switchClass(function(){ return oSettings.fnDisplayEnd() == oSettings.fnRecordsDisplay()}, "paginate_disabled_next", "paginate_enabled_next")
+
+            decorateCallback(oSettings._iDisplayStart);
         }
     };
 }

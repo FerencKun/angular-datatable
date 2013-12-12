@@ -90,7 +90,10 @@ angular.module('angularTableApp')
         $scope.hidingProperties = ["id"];
 
         //data source of the data table's first page
+        /**************************************************************************************/
+        /* Remove slice and add the whole collection as source if you use implicit pagination */
         $scope.dataSource = dataSource.slice(0, 10);
+        /**************************************************************************************/
 
         //need to store the last used settings to reuse it after delete/edit
         var lastUsedData;
@@ -119,7 +122,10 @@ angular.module('angularTableApp')
             }
 
             //now it use only the paging changes
+            /***************************************************/
+            /* Comment this row out if you use implicit paging */
             $scope.dataSource = tempDataSource.slice(data.pageIndex * data.pageSize, (data.pageIndex + 1) * data.pageSize);
+            /***************************************************/
         };
 
         var sortDataByVersion = function(source, versionRangeString){
