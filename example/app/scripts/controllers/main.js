@@ -39,6 +39,17 @@ angular.module('angularTableApp')
 
         //<editor-fold desc='CONFIGURE DATA TABLE SECTION'>
 
+        //define custom headers for columns
+        var customTitles = [
+            {propertyName : 'engine', title : '1. engine'},
+            {propertyName : 'browser', title : '2. browser'},
+            {propertyName : 'platform', title : '3. platform'},
+            {propertyName : 'version', title : '4. version'},
+            {propertyName : 'grade', title : '5. grade'}
+        ];
+
+        $scope.customTitles = customTitles;
+
         //custom header controls of the data table
         var selector = {
             type: DataTableExtensions.headerControls.select,

@@ -356,9 +356,10 @@ angular.module('angularTableApp')
                     var toHide = scope[attrs.hidingProperties];
 
                     //get the property names for header titles
-                    for (var head in header) {
-                        var item = haveCustomHeaderTitles ? head.propertyName : head;
-                        var title = haveCustomHeaderTitles ? head.title : head;
+                    for (var i = 0; i < header.length; i++) {
+
+                        var item = (haveCustomHeaderTitles == true) ? header[i].propertyName : header[i];
+                        var title = (haveCustomHeaderTitles == true) ? header[i].title : header[i];
 
                         if (!toHide || toHide.indexOf(item.toLowerCase()) == -1) {
 
@@ -414,8 +415,8 @@ angular.module('angularTableApp')
 
                     //get the property names for header titles or the user defined header titles
                     if(scope[attrs.headerTitles]){
-                        prepareHeader(scope[attrs.headerTitles]);
                         haveCustomHeaderTitles = true;
+                        prepareHeader(scope[attrs.headerTitles]);
                     }else{
                         prepareHeader(source[0]);
                     }
