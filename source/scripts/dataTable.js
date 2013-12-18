@@ -7,13 +7,20 @@ angular.module('angularTableApp')
 
             link: function postLink(scope, element, attrs) {
 
-                //<editor-fold desc="region: variables">
-                var originalSource; //store the original data source to get element later by row index
+                //<editor-fold desc="region: constants">
+                var tableRowId = '#my-data-table tbody tr';
+                var tableId = '#my-data-table';
+                var twoButtonsPagination = 'my_two_buttons';
+                var customButtonsPagination = 'my_custom_buttons';
+                //</editor-fold>
 
+                //<editor-fold desc="region: variables">
+                //store the original data source to get element later by row index
+                var originalSource;
                 var actualPageIndex = 0;
-                var pageSize = scope[attrs.defaultPageSize] ? parseInt(scope[attrs.defaultPageSize]): 10;
                 var orderBy;
                 var filterOptions = [];
+                var headerControls = [];
                 var headers = [];
                 var headerTitles = [];
                 var elementsMaxReached = false;
@@ -24,11 +31,13 @@ angular.module('angularTableApp')
                 var haveCustomHeaderTitles = false;
                 var table;
                 var isInitTime = true;
+
+                var sortables = [];
+                var toHide = [];
                 //</editor-fold>
 
                 //<editor-fold desc="region: handler parsers">
                 //ANGULAR - parse callable functions from attributes
-
                 var refreshHandler = $parse(attrs.refresh);
 
                 var onRowSelectedHandler = $parse(attrs.selectRow);
@@ -38,36 +47,59 @@ angular.module('angularTableApp')
                 var onDeleteRow = $parse(attrs.deleteRow);
                 //</editor-fold>
 
+                //<editor-fold desc="region: parsed attrs">
+
+                //new option to define one default page size
+                var pageSize = scope[attrs.defaultPageSize] ? parseInt(scope[attrs.defaultPageSize]) : 10;
+                //optional page sizes for page size selector
+                var pageSizesAttr = scope[attrs.pageSizes];
+                var headerControlsAttr = scope[attrs.header];
+                var convertersAttr = scope[attrs.converters];
+                //support case-insensitivity
+                var sortingProperties = scope[attrs.sortingProperties];
+                for (var i = 0; i < sortingProperties.length; i++) {
+                    sortables.push(sortingProperties[i].toLowerCase())
+                }
+                var hidingProperties = scope[attrs.hidingProperties];
+                for (var j = 0; j < hidingProperties.length; j++) {
+                    toHide.push(hidingProperties[j].toLowerCase())
+                }
+
+                var headerTitlesAttr = scope[attrs.headerTitles];
+                var paginationTypeAttr = attrs.paginationType;
+                //</editor-fold>
+
                 //<editor-fold desc="region: callbacks called from outside">
 
                 //dataTableExtensions
                 //get previous page - callback of dataTables's pagination
-                var previousCallback = function () {
+                function previousCallback() {
 
                     if (actualPageIndex > 0) {
 
                         actualPageIndex--;
                         refreshCallback();
                     }
-                };
+                }
 
                 //dataTableExtensions
                 //get next page - callback of dataTables's pagination
-                var nextCallback = function () {
+                function nextCallback() {
 
                     if (!elementsMaxReached) {
 
                         actualPageIndex++;
                         refreshCallback();
                     }
-                };
+                }
 
+                //inner use
                 //set the filter conditions - callback of the custom header controls
-                var setFilterOptions = function (options) {
+                function setFilterOptions(options) {
 
                     for (var i = 0; i < options.length; i++) {
 
-                        var filter = filterOptions.getElementByFilterName(options[i])
+                        var filter = filterOptions.getElementByFilterName(options[i]);
                         if (filter) {
 
                             filter.filterValue = options[i].filterValue;
@@ -79,104 +111,74 @@ angular.module('angularTableApp')
                     //after filter we want to see the results started from the first page
                     actualPageIndex = 0;
                     refreshCallback();
-                };
+                }
 
+                //inner use
                 //set the actual page size - callback of the custom header controls
-                var setPageSize = function (size) {
+                function setPageSize(size) {
 
                     pageSize = size;
 
                     //after changed page size we want to see the results started from the first page
                     actualPageIndex = 0;
                     refreshCallback();
-                };
+                }
 
+                //inner use
                 //check if it has a next page or not - callback of dataTables's pagination
-                var hasNextPage = function () {
+                function hasNextPage() {
 
                     return !elementsMaxReached;
-                };
+                }
 
+                //inner use
                 //check if it has a previous page or not - callback of dataTables's pagination
-                var hasPreviousPage = function () {
+                function hasPreviousPage() {
 
                     return actualPageIndex !== 0;
-                };
+                }
+
                 //</editor-fold>
 
                 //<editor-fold desc="region: table decorators">
 
                 //calls the refresh method of the controller, sends the new filter/order/paging options to the controller
-                var refreshCallback = function () {
+                function refreshCallback() {
 
                     //collect the filter options
-                    var conditions = {pageIndex: actualPageIndex, pageSize: pageSize, orderBy: orderBy, filterOptions: filterOptions};
+                    var conditions = {
+                        pageIndex: actualPageIndex,
+                        pageSize: pageSize,
+                        orderBy: orderBy,
+                        filterOptions: filterOptions
+                    };
 
                     scope.$apply(function () {
 
                         refreshHandler({data: conditions}, scope, { $event: event });
                     });
-                };
+                }
 
                 //calls decoration on new page if the data tables uses the my-two-buttons pagination mode
-                function decorateCallback(startIndex){
+                //it stores if a page was already decorated or not
+                function decorateCallback(startIndex) {
+
                     var pageIndex = startIndex / pageSize;
-                    if(!pageDecorationStatus[pageIndex]){
+
+                    if (!pageDecorationStatus[pageIndex]) {
+
                         decorateDataTableOnChange();
                         pageDecorationStatus[pageIndex] = true;
                     }
-                };
-
-                //create and set own pagination
-                createPagination(previousCallback, nextCallback, hasNextPage, hasPreviousPage, decorateCallback);
-
-                //prepare the header controls to add them to the header
-                var headerControls = [];
-                (function prepareHeaderControls() {
-
-                    //if the pageSizes attr is defined add it to the header controls
-                    if (attrs.pageSizes) {
-
-                        var pageSizeChanger = {
-                            type: DataTableExtensions.headerControls.select,
-                            properties: {
-                                options: scope[attrs.pageSizes],
-                                label: "Show",
-                                trigger: {mode: DataTableExtensions.triggerModes.onChange, callback: setPageSize} //calls the data table filters changed event
-                            }
-                        };
-
-                        headerControls.push(pageSizeChanger);
-                    }
-
-                    //collect all of the header controls
-                    var controls = scope[attrs.header];
-                    if (controls) {
-                        for (var i = 0; i < controls.length; i++) {
-
-                            var control = controls[i];
-
-                            //check if trigger mode is 'onchange' but there is no callback set by user
-                            if (control.trigger && control.trigger.mode === DataTableExtensions.triggerModes.onChange
-                                && !control.trigger.callback) {
-
-                                control.trigger.callback = refreshCallback;
-                            }
-
-                            headerControls.push(control);
-                        }
-                    }
-
-                    createCustomHeader(headerControls, setFilterOptions);
-                })();
+                }
 
                 //callback on row selection
-                var setRowSelectionCallback = function () {
+                function setRowSelectionCallback() {
 
-                    $("#my-data-table tbody tr").click(function (event) {
+                    $(tableRowId).click(function (event) {
 
                         //TWITTER BOOTSTRAP - color the row
-                        $("#my-data-table tbody tr").removeClass('info');
+                        $(tableRowId).removeClass('info');
                         $(this).addClass('info');
 
                         var index = $(this).context._DT_RowIndex;
@@ -191,17 +193,17 @@ angular.module('angularTableApp')
                             onRowSelectedHandler({item: itemOnIndex}, scope, {$event: event});
                         });
                     });
-                };
+                }
 
                 //function to add extra buttons to rows
-                var addExtraButtonToRow = function (button) {
+                function addExtraButtonToRow(button) {
 
                     //create empty header (to extend the style)
                     if ($('#' + button.name).length === 0) {
 
                         var nCloneTh = $('<th>');
                         nCloneTh.attr("id", button.name);
-                        nCloneTh.appendTo($('#my-data-table thead tr'));
+                        nCloneTh.appendTo($(tableRowId));
                     }
 
                     var nCloneTd = $('<td>');
@@ -212,21 +214,26 @@ angular.module('angularTableApp')
                     switch (button.style) {
                         case DataTableExtensions.buttonStyle.info:
                             btn.addClass("btn btn-info");
+                            break;
                         case DataTableExtensions.buttonStyle.warning:
                             btn.addClass("btn btn-warning");
+                            break;
                         case DataTableExtensions.buttonStyle.success:
                             btn.addClass("btn btn-success");
+                            break;
                         case DataTableExtensions.buttonStyle.error:
                             btn.addClass("btn btn-danger");
+                            break;
                         default:
                             btn.addClass("btn");
+                            break;
                     }
 
                     btn.text(button.text);
 
                     btn.appendTo(nCloneTd);
 
-                    $('#my-data-table tbody tr').each(function (i) {
+                    $(tableRowId).each(function (i) {
 
                         var tdButton = nCloneTd.clone(true);
 
@@ -238,10 +245,10 @@ angular.module('angularTableApp')
 
                         tdButton.appendTo(this);
                     });
-                };
+                }
 
                 //function to call on data table change
-                var decorateDataTableOnChange = function () {
+                function decorateDataTableOnChange() {
 
                     setRowSelectionCallback();
 
@@ -280,15 +287,15 @@ angular.module('angularTableApp')
 
                         addExtraButtonToRow(btnDelete);
                     }
-                };
+                }
 
                 //navigation allowed by arrow keys
-                var setNavigationOnArrows = function () {
+                function setNavigationOnArrows() {
 
                     $(document).keydown(function (event) {
 
                         var currentRow;
-                        var rowsOnPageCount = $("#my-data-table tbody tr").length;
+                        var rowsOnPageCount = $(tableRowId).length;
 
                         //!!!!!nice from dataTables
                         //$(currentRow).next().context._DT_RowIndex -- gives the original index of the row back (after ordering it remains the same)
@@ -301,12 +308,13 @@ angular.module('angularTableApp')
 
                                 if (lastIndex < rowsOnPageCount - 1) {
                                     lastIndex++;
-                                    currentRow = $("#my-data-table tbody tr").get(lastIndex);
+                                    currentRow = $(tableRowId).get(lastIndex);
                                     $(currentRow).prev().removeClass("info");
                                     $(currentRow).addClass("info");
                                 } else {
                                     if (hasNextPage()) {
-                                        $("#my-data-table tbody tr.info").removeClass("info");
+                                        var infoId = tableRowId + ".info";
+                                        $(infoId).removeClass("info");
                                         lastIndex = -1;
                                         nextCallback();
                                     } else {
@@ -318,7 +326,7 @@ angular.module('angularTableApp')
                             case 38:
                                 if (lastIndex > 0) {
                                     lastIndex--;
-                                    currentRow = $("#my-data-table tbody tr").get(lastIndex);
+                                    currentRow = $(tableRowId).get(lastIndex);
                                     $(currentRow).next().removeClass("info");
                                     $(currentRow).addClass("info");
                                 } else {
@@ -332,37 +340,24 @@ angular.module('angularTableApp')
                                 break;
                         }
                     });
-                };
+                }
+
                 //</editor-fold>
 
                 //<editor-fold desc="region: draw and redraw table">
 
-                //support case-insensitivity
-                var sortables = [];
-                var sortingProperties = scope[attrs.sortingProperties];
-                for (var i = 0; i < sortingProperties.length; i++) {
-                    sortables.push(sortingProperties[i].toLowerCase())
-                }
-                var toHide = [];
-                var hidingProperties = scope[attrs.hidingProperties];
-                for (var i = 0; i < hidingProperties.length; i++) {
-                    toHide.push(hidingProperties[i].toLowerCase())
-                }
-
                 //create header of the table - set sorting and hide if needed
-                var prepareHeader = function (header) {
-
-                    var sortables = scope[attrs.sortingProperties];
-                    var toHide = scope[attrs.hidingProperties];
+                function prepareHeader(header) {
 
                     //get the property names for header titles
-                    for (var head in header) {
-                        var item = (haveCustomHeaderTitles == true) ? head.propertyName : head;
-                        var title = (haveCustomHeaderTitles == true) ? head.title : head;
+                    for (var i = 0; i < header.length; i++) {
+                        var head = header[i];
+                        var item = (haveCustomHeaderTitles === true) ? head.propertyName : head;
+                        var title = (haveCustomHeaderTitles === true) ? head.title : head;
 
                         if (!toHide || toHide.indexOf(item.toLowerCase()) == -1) {
 
-                            var sortable = attrs.allSortable == "" ? true : false;
+                            var sortable = attrs.allSortable === "";
 
                             if (sortables && sortables.indexOf(item.toLowerCase()) != -1) {
                                 sortable = true;
@@ -375,7 +370,7 @@ angular.module('angularTableApp')
                 }
 
                 //create rows of the table - hide if needed
-                var prepareRows = function (source) {
+                function prepareRows(source) {
 
                     var rows = [];
 
@@ -389,10 +384,10 @@ angular.module('angularTableApp')
                             var item = headers[j];//.sTitle;
 
                             var valueToAdd = source[i][item];
+
                             //use converters
-                            var converters = scope[attrs.converters];
-                            if (converters) {
-                                var converterString = converters.getConverterStringTo(item);
+                            if (convertersAttr) {
+                                var converterString = convertersAttr.getConverterStringTo(item);
                                 if (converterString) {
                                     var converter = $parse(converterString);
                                     valueToAdd = converter({value: valueToAdd}, scope, { $event: event });
@@ -407,16 +402,60 @@ angular.module('angularTableApp')
                     return rows;
                 }
 
+                //prepare the header controls to add them to the header
+                function prepareHeaderControls() {
+
+                    //if the pageSizes attr is defined add it to the header controls
+                    if (pageSizesAttr) {
+
+                        var pageSizeChanger = {
+                            type: DataTableExtensions.headerControls.select,
+                            properties: {
+                                options: pageSizesAttr,
+                                label: "Show",
+                                trigger: {mode: DataTableExtensions.triggerModes.onChange, callback: setPageSize} //calls the data table filters changed event
+                            }
+                        };
+
+                        headerControls.push(pageSizeChanger);
+                    }
+
+                    //collect all of the header controls
+                    if (headerControlsAttr) {
+                        for (var i = 0; i < headerControlsAttr.length; i++) {
+
+                            var control = headerControlsAttr[i];
+
+                            //check if trigger mode is 'onchange' but there is no callback set by user
+                            if (control.trigger && control.trigger.mode === DataTableExtensions.triggerModes.onChange
+                                && !control.trigger.callback) {
+
+                                control.trigger.callback = refreshCallback;
+                            }
+
+                            headerControls.push(control);
+                        }
+                    }
+
+                    createCustomHeader(headerControls, setFilterOptions);
+                }
+
+                //call the create the header controls
+                prepareHeaderControls();
+
+                //call the create and set own paginations
+                createPagination(previousCallback, nextCallback, hasNextPage, hasPreviousPage, decorateCallback);
+
                 //function to draw the table
-                var drawTable = function (source) {
+                function drawTable(source) {
 
                     originalSource = source;
 
                     //get the property names for header titles or the user defined header titles
-                    if(scope[attrs.headerTitles]){
+                    if (headerTitlesAttr) {
                         haveCustomHeaderTitles = true;
-                        prepareHeader(scope[attrs.headerTitles]);
-                    }else{
+                        prepareHeader(headerTitlesAttr);
+                    } else {
                         prepareHeader(source[0]);
                     }
 
@@ -424,23 +463,23 @@ angular.module('angularTableApp')
                     var rows = prepareRows(source);
 
                     //set pagination
-                    var pagination = 'my_two_buttons';
+                    var pagination = twoButtonsPagination;
 
-                    if(scope[attrs.paginationType]){
-                        switch(scope[attrs.paginationType]){
+                    if (paginationTypeAttr) {
+                        switch (paginationTypeAttr) {
                             case 'explicit':
-                                pagination = 'my_custom_buttons';
+                                pagination = customButtonsPagination;
                                 break;
                             case 'implicit':
-                                pagination = 'my_two_buttons';
+                                pagination = twoButtonsPagination;
                                 break;
                         }
                     }
 
-                    table = $("#my-data-table").dataTable({
+                    table = $(tableId).dataTable({
                         "aoColumns": headerTitles,
                         "aaData": rows,
-                        "iDisplayLength" : pageSize,
+                        "iDisplayLength": pageSize,
                         "fnInfoCallback": onInfoChanged,
                         "sPaginationType": pagination, //my implementation in dataTablesExtensions
                         "sDom": 't<"bottom"pi>',
@@ -452,10 +491,10 @@ angular.module('angularTableApp')
                     decorateDataTableOnChange();
 
                     setNavigationOnArrows();
-                };
+                }
 
                 //function called on the source change
-                var refreshData = function (source) {
+                function refreshData(source) {
 
                     originalSource = source;
 
@@ -469,11 +508,11 @@ angular.module('angularTableApp')
                     table.fnAddData(rows);
 
                     decorateDataTableOnChange();
-                };
+                }
 
                 //after adding the custom header it is not triggered by the default controls
                 //checked why? ----------> 'i' was missing from sDom...
-                var onInfoChanged = function (oSettings, iStart, iEnd, iMax, iTotal, sPre) {
+                function onInfoChanged(oSettings) { //other available params: iStart, iEnd, iMax, iTotal, sPre
 
                     //reading out the ordering info from oSettings
                     if (oSettings) {
@@ -481,73 +520,89 @@ angular.module('angularTableApp')
                         var direction = oSettings.aaSorting[0][1];
                         var header = headers[headerIndex];
                         var newOrder = { property: header.sTitle, direction: direction};
-                    }
 
-                    //need to check because at the first creation time it will be called to and at this time we are already in digest phase
-                    if (!scope.$$phase) {
-                        if (orderBy !== newOrder) {
+                        //need to check because at the first creation time it will be called to and at this time we are already in digest phase
+                        if (!scope.$$phase) {
+                            if (orderBy !== newOrder) {
 
-                            orderBy = newOrder;
-                            actualPageIndex = 0;
-                            refreshCallback();
+                                orderBy = newOrder;
+                                actualPageIndex = 0;
+                                refreshCallback();
+                            }
                         }
                     }
-                };
+                }
 
                 //set watch on the scope element
-                scope.$watch(attrs.mySource, function (source) {
+                function setWatchOnTheSource() {
+                    var mySourceId = attrs.mySource;
+                    var mySource = scope[mySourceId];
 
-                    //the first time set of the collection is a watch triggering action too
-                    if (isInitTime && source && source.length > 0) {
+                    if (mySource) {
+                        scope.$watch(mySourceId, function (source) {
 
-                        //initialize the table
-                        drawTable(scope[attrs.mySource]);
-                        isInitTime = false;
-                        return;
-                    } else if (!isInitTime) {
+                            //the first time set of the collection is a watch triggering action too
+                            if (isInitTime && source && source.length > 0) {
 
-                        if (source && source.length > 0) {
+                                //initialize the table
+                                drawTable(mySource);
+                                isInitTime = false;
+                                return;
+                            } else if (!isInitTime) {
 
-                            //page size needs to be set explicitly on the table options too
-                            var oSettings = table.fnSettings();
-                            oSettings._iDisplayLength = pageSize;
+                                if (source && source.length > 0) {
 
-                            //redraw after resize
-                            table.fnDraw();
+                                    //page size needs to be set explicitly on the table options too
+                                    var oSettings = table.fnSettings();
+                                    oSettings._iDisplayLength = pageSize;
 
-                            refreshData(source);
-                        } else {
-                            //if empty source comes back
-                            elementsMaxReached = true;
-                            table.fnClearTable();
-                        }
+                                    //redraw after resize
+                                    table.fnDraw();
+
+                                    refreshData(source);
+                                } else {
+                                    //if empty source comes back
+                                    elementsMaxReached = true;
+                                    table.fnClearTable();
+                                }
+                            }
+                        });
                     }
-                });
+                }
+
+                //call the set watch
+                setWatchOnTheSource();
                 //</editor-fold>
             }
-        };
+        }
     });
 
-Array.prototype.getElementByFilterName = function (obj) {
 
-    for (var i = 0; i < this.length; i++) {
-        if (this[i].filterName === obj.filterName) {
-            return this[i];
+//<editor-fold desc="array extensions">
+Array.prototype.getElementByFilterName = getElementByFilterName;
+function getElementByFilterName(obj) {
+    if (obj) {
+        for (var i = 0; i < this.length; i++) {
+            if (this[i].filterName === obj.filterName) {
+                return this[i];
+            }
         }
     }
-
-    return;
+    return null;
 }
 
 
-Array.prototype.getConverterStringTo = function (property) {
+Array.prototype.getConverterStringTo = getConverterStringTo;
+function getConverterStringTo(property) {
+    if (property) {
+        for (var i = 0; i < this.length; i++) {
+            var element = this[i];
+            if (element && element.property && element.property.toLowerCase() === property.toLowerCase()) {
 
-    for (var i = 0; i < this.length; i++) {
-        if (this[i].property.toLowerCase() === property.toLowerCase()) {
-
-            return this[i].converterCallback;
+                return element.converterCallback;
+            }
         }
     }
-
-    return;
+    return null;
 }
+//</editor-fold>

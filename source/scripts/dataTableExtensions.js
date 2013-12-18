@@ -16,7 +16,7 @@ DataTableExtensions.buttonStyle = {
     warning: 1,
     error: 2,
     success: 3
-}
+};
 
 //function to overwrite the pagination system of dataTables
 function createPagination(previousCallback, nextCallback, hasNextPageCallback, hasPreviousPageCallback, decorateCallback) {
@@ -77,8 +77,8 @@ function createPagination(previousCallback, nextCallback, hasNextPageCallback, h
          */
         "fnInit": function ( oSettings, nPaging, fnCallbackDraw )
         {
-            var oLang = oSettings.oLanguage.oPaginate;
-            var oClasses = oSettings.oClasses;
+            //var oLang = oSettings.oLanguage.oPaginate;
+            //var oClasses = oSettings.oClasses;
             var fnClickHandler = function ( e ) {
                 if ( oSettings.oApi._fnPageChange( oSettings, e.data.action ) )
                 {
@@ -94,9 +94,9 @@ function createPagination(previousCallback, nextCallback, hasNextPageCallback, h
             var nPrevious = $('<a>').text("Previous").appendTo(nPreviousWrapper);
             var nNext = $('<a>').text("Next").appendTo(nNextWrapper);
 
-            var els = $('a', nPaging);
-            var nPrevious = els[0],
-                nNext = els[1];
+            /*var els = $('a', nPaging);
+             var nPrevious = els[0],
+             nNext = els[1];*/
 
             oSettings.oApi._fnBindAction( nPrevious, {action: "previous"}, fnClickHandler );
             oSettings.oApi._fnBindAction( nNext,     {action: "next"},     fnClickHandler );
@@ -105,11 +105,11 @@ function createPagination(previousCallback, nextCallback, hasNextPageCallback, h
             if ( !oSettings.aanFeatures.p )
             {
                 nPaging.id = oSettings.sTableId+'_paginate';
-                nPrevious.id = oSettings.sTableId+'_previous';
-                nNext.id = oSettings.sTableId+'_next';
+                nPrevious.attr('id', oSettings.sTableId+'_previous');
+                nNext.attr('id', oSettings.sTableId+'_next');
 
-                nPrevious.setAttribute('aria-controls', oSettings.sTableId);
-                nNext.setAttribute('aria-controls', oSettings.sTableId);
+                nPrevious.attr('aria-controls', oSettings.sTableId);
+                nNext.attr('aria-controls', oSettings.sTableId);
             }
         },
 
@@ -120,7 +120,7 @@ function createPagination(previousCallback, nextCallback, hasNextPageCallback, h
          * Inputs:   object:oSettings - dataTables settings object
          *           function:fnCallbackDraw - draw function to call on page change
          */
-        "fnUpdate": function ( oSettings, fnCallbackDraw )
+        "fnUpdate": function ( oSettings )
         {
             if (!oSettings.aanFeatures.p) {
                 return;
@@ -128,7 +128,7 @@ function createPagination(previousCallback, nextCallback, hasNextPageCallback, h
 
             $('#previousPager').switchClass(function (){ return oSettings._iDisplayStart === 0 }, "paginate_disabled_previous", "paginate_enabled_previous");
 
-            $('#nextPager').switchClass(function(){ return oSettings.fnDisplayEnd() == oSettings.fnRecordsDisplay()}, "paginate_disabled_next", "paginate_enabled_next")
+            $('#nextPager').switchClass(function(){ return oSettings.fnDisplayEnd() == oSettings.fnRecordsDisplay()}, "paginate_disabled_next", "paginate_enabled_next");
 
             decorateCallback(oSettings._iDisplayStart);
         }
@@ -204,8 +204,8 @@ function createCustomHeader(controls, filterOptionsCallback) {
 
     function createAndAppendControl(createFunction, control, addToThis) {
 
-        var control = createFunction(control.properties);
-        control.appendTo(addToThis);
+        var newControl = createFunction(control.properties);
+        newControl.appendTo(addToThis);
     }
 
     //create and append selector
@@ -325,14 +325,19 @@ function createCustomHeader(controls, filterOptionsCallback) {
 
             case DataTableExtensions.buttonStyle.info:
                 button.addClass("btn btn-info");
+                break;
             case DataTableExtensions.buttonStyle.warning:
                 button.addClass("btn btn-warning");
+                break;
             case DataTableExtensions.buttonStyle.success:
                 button.addClass("btn btn-success");
+                break;
             case DataTableExtensions.buttonStyle.error:
                 button.addClass("btn btn-danger");
+                break;
             default:
                 button.addClass("btn");
+                break;
         }
 
         if (properties.callback) {
